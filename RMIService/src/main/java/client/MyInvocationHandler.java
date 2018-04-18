@@ -57,6 +57,7 @@ public class MyInvocationHandler implements InvocationHandler {
         byte[] bytes = new byte[10000];
         DatagramSocket response = new DatagramSocket(port + 1);
         DatagramPacket resultInvokeMethod = new DatagramPacket(bytes, bytes.length);
+        response.setSoTimeout(1000);
         response.receive(resultInvokeMethod);
         result = readFromByteArray(bytes);
         response.close();

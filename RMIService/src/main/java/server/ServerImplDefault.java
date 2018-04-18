@@ -18,7 +18,6 @@ public class ServerImplDefault implements Server {
     @Override
     public Server setPort(int port) {
         this.port = port;
-//        if (!isSocketEmpty(port)) throw new IllegalArgumentException();
         return this;
     }
 
@@ -31,6 +30,7 @@ public class ServerImplDefault implements Server {
     @Override
     public void start() throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         while (true) {
+            //wait request client
             byte[] receiveArray = new byte[10000];
             DatagramPacket receivePacket = new DatagramPacket(receiveArray, receiveArray.length);
             DatagramSocket socket = new DatagramSocket(port);
@@ -61,16 +61,20 @@ public class ServerImplDefault implements Server {
     }
 
     private Object getResultInvokeMethodToClient(byte[] arrayCopy, DatagramSocket socket) throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        //get name service
         String name = (String) readFromByteArray(arrayCopy);
+        //get name method
         byte[] buffer = new byte[10000];
         DatagramPacket packetMethod = new DatagramPacket(buffer, buffer.length);
         socket.receive(packetMethod);
         String method = (String) readFromByteArray(buffer);
+        //get count args method
         DatagramPacket packetCountArgs = new DatagramPacket(buffer, buffer.length);
         socket.receive(packetCountArgs);
         Integer countArgs = (Integer) readFromByteArray(buffer);
         Object[] args = new Object[countArgs];
         Class[] argsClass = new Class[countArgs];
+        //if count args greater than zero then get all args and class this args
         for (int i = 0; i < countArgs; i++) {
             DatagramPacket packetArg = new DatagramPacket(buffer, buffer.length);
             socket.receive(packetArg);
@@ -81,6 +85,7 @@ public class ServerImplDefault implements Server {
             socket.receive(packetArg);
             argsClass[i] = (Class) readFromByteArray(buffer);
         }
+        // invoke method and return result
         Service service = findService(name);
         Method methodService = service.getClass().getMethod(method, argsClass);
         return methodService.invoke(service, args);
@@ -100,44 +105,13 @@ public class ServerImplDefault implements Server {
     public static Server build() {
         ServerImplDefault serverImplDefault = new ServerImplDefault();
         serverImplDefault.container = new ContainerImplDefault();
-        //serverImplDefault.port = findEmptySocket();
+        serverImplDefault.port = 6968;
         return serverImplDefault;
     }
 
-    private static int findEmptySocket() {
-        int testPort = 10001;
-        /*while (true) {
-            if (isSocketEmpty(testPort)) {
-                break;
-            } else {
-                testPort++;
-            }
-        }*/
-        return testPort;
-    }
-
-    private static boolean isSocketEmpty(int port) {
-        Socket s = null;
-        try {
-            s = new Socket("localhost", port);
-            return true;
-        } catch (IOException e) {
-            return false;
-        } finally {
-            if (s != null) {
-                try {
-                    s.close();
-                } catch (IOException e) {
-                    throw new RuntimeException("You should handle this error.", e);
-                }
-            }
-        }
-    }
-
     private static byte[] writeToByteArray(Object element) {
-        try (
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream out = new ObjectOutputStream(baos);) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream out = new ObjectOutputStream(baos);) {
             out.writeObject(element);
             return baos.toByteArray();
         } catch (IOException e) {
@@ -147,9 +121,8 @@ public class ServerImplDefault implements Server {
     }
 
     private Object readFromByteArray(byte[] bytes) throws IOException, ClassNotFoundException {
-        try (
-                ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                ObjectInputStream in = new ObjectInputStream(bais);) {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+             ObjectInputStream in = new ObjectInputStream(bais);) {
             return in.readObject();
         } catch (IOException e) {
             e.printStackTrace();
