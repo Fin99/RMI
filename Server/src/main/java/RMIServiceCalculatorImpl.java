@@ -12,7 +12,7 @@ public class RMIServiceCalculatorImpl implements RMIServiceCalculator, Service {
     }
 
     @Override
-    public int sub(Integer term1, Integer term2) throws RemoteException{
+    public int sub(int term1, int term2) throws RemoteException{
         sumAllTerm+=term1+term2;
         return term1-term2;
     }

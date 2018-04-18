@@ -4,8 +4,6 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.*;
-import java.util.Arrays;
-import java.util.stream.Stream;
 
 public class ServerImplDefault implements Server {
     private Container container;
@@ -42,15 +40,19 @@ public class ServerImplDefault implements Server {
             if (receiveArray[0] == 0) {
                 //client ask service
                 System.arraycopy(receiveArray, 1, buffer, 0, buffer.length);
+                System.out.println("Client ask service...");
                 result = getServiceToClient(buffer);
+                System.out.println("Service was send");
             } else {
                 //client ask result invoke this method
                 System.arraycopy(receiveArray, 1, buffer, 0, buffer.length);
+                System.out.println("Client ask result invoke method...");
                 result = getResultInvokeMethodToClient(buffer, socket);
+                System.out.println("Result was send");
             }
             //send result to client
             byte[] bufferResult = writeToByteArray(result);
-            DatagramPacket packetResult = new DatagramPacket(bufferResult, bufferResult.length, InetAddress.getLocalHost(), port+1/*receivePacket.getPort()*/);
+            DatagramPacket packetResult = new DatagramPacket(bufferResult, bufferResult.length, InetAddress.getLocalHost(), port + 1/*receivePacket.getPort()*/);
             socket.close();
             socket = new DatagramSocket();
             socket.send(packetResult);
@@ -73,9 +75,12 @@ public class ServerImplDefault implements Server {
             DatagramPacket packetArg = new DatagramPacket(buffer, buffer.length);
             socket.receive(packetArg);
             args[i] = readFromByteArray(buffer);
-            argsClass[i] = args[i].getClass();
         }
-
+        for (int i = 0; i < countArgs; i++) {
+            DatagramPacket packetArg = new DatagramPacket(buffer, buffer.length);
+            socket.receive(packetArg);
+            argsClass[i] = (Class) readFromByteArray(buffer);
+        }
         Service service = findService(name);
         Method methodService = service.getClass().getMethod(method, argsClass);
         return methodService.invoke(service, args);

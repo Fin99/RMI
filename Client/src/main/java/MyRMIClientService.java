@@ -10,6 +10,6 @@ public class MyRMIClientService {
         RMIServiceCalculator service = (RMIServiceCalculator) registry.lookup("service/calculator");
         Scanner scanner = new Scanner(System.in);
         System.out.println(service.sub(scanner.nextInt(),scanner.nextInt()));
-        System.out.println();
+        System.out.println(service.sumAll());
     }
 }

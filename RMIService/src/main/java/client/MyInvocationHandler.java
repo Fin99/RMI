@@ -18,29 +18,44 @@ public class MyInvocationHandler implements InvocationHandler {
 
     public Object invoke(Object proxy, Method m, Object[] args) throws Throwable {
         Object result;
-        //send arguments method to server
+        //send name service
         byte[] bufferName = writeToByteArray(name);
-        byte[] buffer = new byte[bufferName.length+1];
+        byte[] buffer = new byte[bufferName.length + 1];
         buffer[0] = 1;
         System.arraycopy(bufferName, 0, buffer, 1, bufferName.length);
         DatagramSocket request = new DatagramSocket();
         DatagramPacket packetName = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
         request.send(packetName);
+        //send name method
         buffer = writeToByteArray(m.getName());
         DatagramPacket packetMethod = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
         request.send(packetMethod);
-        buffer = writeToByteArray(new Integer(args.length));
-        DatagramPacket packetCountArgs = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
-        request.send(packetCountArgs);
-        for (Object a: args) {
-            buffer = writeToByteArray(a);
-            DatagramPacket packetArgs = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
-            request.send(packetArgs);
+        //send count args method
+        if (args == null) {
+            buffer = writeToByteArray(0);
+            DatagramPacket packetCountArgs = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
+            request.send(packetCountArgs);
+        } else {
+            buffer = writeToByteArray(args.length);
+            DatagramPacket packetCountArgs = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
+            request.send(packetCountArgs);
+            //send args
+            for (Object a : args) {
+                buffer = writeToByteArray(a);
+                DatagramPacket packetArgs = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
+                request.send(packetArgs);
+            }
+            //send class args
+            for (Class a : m.getParameterTypes()) {
+                buffer = writeToByteArray(a);
+                DatagramPacket packetArgs = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
+                request.send(packetArgs);
+            }
         }
         request.close();
         //message is sent. receive response
         byte[] bytes = new byte[10000];
-        DatagramSocket response = new DatagramSocket(port+1);
+        DatagramSocket response = new DatagramSocket(port + 1);
         DatagramPacket resultInvokeMethod = new DatagramPacket(bytes, bytes.length);
         response.receive(resultInvokeMethod);
         result = readFromByteArray(bytes);
