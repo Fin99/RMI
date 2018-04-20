@@ -17,7 +17,7 @@ public interface Server {
 
     boolean addService(Service service, String serviceName);
 
-    void start() throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException;
+    void start() throws IOException;
 
-    Service findService(String serviceName);
+    Service findService(String serviceName) throws ServiceNotFoundException;
 }

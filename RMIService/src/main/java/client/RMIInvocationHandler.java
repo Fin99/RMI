@@ -1,5 +1,8 @@
 package client;
 
+import server.Service;
+import server.ServiceNotFoundException;
+
 import java.io.*;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -7,16 +10,16 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-public class MyInvocationHandler implements InvocationHandler {
+public class RMIInvocationHandler implements InvocationHandler {
     private final int port;
     private final String name;
 
-    MyInvocationHandler(int port, String name) {
+    RMIInvocationHandler(int port, String name) {
         this.port = port;
         this.name = name;
     }
 
-    public Object invoke(Object proxy, Method m, Object[] args) throws Throwable {
+    public Object invoke(Object proxy, Method m, Object[] args) throws IOException, ServiceNotFoundException, IllegalArgumentException {
         Object result;
         //send name service
         byte[] bufferName = writeToByteArray(name);
@@ -41,6 +44,7 @@ public class MyInvocationHandler implements InvocationHandler {
             request.send(packetCountArgs);
             //send args
             for (Object a : args) {
+                if(!(a instanceof Serializable))throw new IllegalArgumentException("All arguments must implement the interface Serializable");
                 buffer = writeToByteArray(a);
                 DatagramPacket packetArgs = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
                 request.send(packetArgs);
@@ -57,10 +61,12 @@ public class MyInvocationHandler implements InvocationHandler {
         byte[] bytes = new byte[10000];
         DatagramSocket response = new DatagramSocket(port + 1);
         DatagramPacket resultInvokeMethod = new DatagramPacket(bytes, bytes.length);
-        response.setSoTimeout(1000);
+        response.setSoTimeout(2000);
         response.receive(resultInvokeMethod);
         result = readFromByteArray(bytes);
         response.close();
+        if (result instanceof ServiceNotFoundException) throw (ServiceNotFoundException) result;
+        if (result instanceof IllegalArgumentException) throw (IllegalArgumentException) result;
         return result;
     }
 
@@ -71,10 +77,14 @@ public class MyInvocationHandler implements InvocationHandler {
         return baos.toByteArray();
     }
 
-    private Object readFromByteArray(byte[] bytes) throws IOException, ClassNotFoundException {
+    private Object readFromByteArray(byte[] bytes) throws IOException {
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         ObjectInputStream in = new ObjectInputStream(bais);
-        return in.readObject();
-
+        try {
+            return in.readObject();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

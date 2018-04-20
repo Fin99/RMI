@@ -1,5 +1,8 @@
 package client;
 
+import com.sun.istack.internal.NotNull;
+import server.ServiceNotFoundException;
+
 import java.io.*;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -15,12 +18,11 @@ public class RegistryImpl implements Registry {
     }
 
     @Override
-    public Object lookup(String name) throws IOException, ClassNotFoundException {
+    public Object lookup(@NotNull String name) throws IOException, ServiceNotFoundException {
         //check correctness service name
-        if(name == null) throw new IllegalArgumentException("Invalid service name");
+        if(name == null || name.equals("")) throw new IllegalArgumentException("Invalid service name");
         //send message name service
         byte[] bufferName = writeToByteArray(name);
-        if(bufferName == null) throw new IllegalArgumentException("Invalid service name");
         byte[] buffer = new byte[bufferName.length + 1];
         buffer[0] = 0;
         System.arraycopy(bufferName, 0, buffer, 1, bufferName.length);
@@ -32,16 +34,17 @@ public class RegistryImpl implements Registry {
         byte[] receiveMas = new byte[10000];
         DatagramPacket responsePacket = new DatagramPacket(receiveMas, receiveMas.length);
         socket = new DatagramSocket(port + 1);
-        socket.setSoTimeout(1000);
+        socket.setSoTimeout(2000);
         socket.receive(responsePacket);
         socket.close();
         Object implementation = readFromByteArray(receiveMas);
+        if(implementation instanceof Throwable)throw (ServiceNotFoundException) implementation;
         //check whether server has found service
         if (implementation == null) throw new IllegalArgumentException("Invalid service name");
         //create and return proxy
         Class[] interfaze = implementation.getClass().getInterfaces();
         ClassLoader loader = implementation.getClass().getClassLoader();
-        InvocationHandler handler = new MyInvocationHandler(10001, name);
+        InvocationHandler handler = new RMIInvocationHandler(10001, name);
         return Proxy.newProxyInstance(loader, interfaze, handler);
     }
 
@@ -56,11 +59,11 @@ public class RegistryImpl implements Registry {
         return null;
     }
 
-    private Object readFromByteArray(byte[] bytes) throws IOException, ClassNotFoundException {
+    private Object readFromByteArray(byte[] bytes){
         try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
              ObjectInputStream in = new ObjectInputStream(bais);) {
             return in.readObject();
-        } catch (IOException e) {
+        } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }
         return null;

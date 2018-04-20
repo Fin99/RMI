@@ -5,7 +5,7 @@ public interface Container {
 
     boolean addService(Service service, String name);
 
-    boolean remoteService(String serviceName);
+    boolean removeService(String serviceName);
 
-    Service getService(String name);
+    Service getService(String name) throws ServiceNotFoundException;
 }

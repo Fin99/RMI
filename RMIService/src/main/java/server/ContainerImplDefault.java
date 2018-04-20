@@ -15,12 +15,14 @@ public class ContainerImplDefault implements Container {
     }
 
     @Override
-    public boolean remoteService(String serviceName) {
+    public boolean removeService(String serviceName) {
         return container.remove(serviceName) != null;
     }
 
     @Override
-    public Service getService(String name) {
-        return container.get(name);
+    public Service getService(String name) throws ServiceNotFoundException {
+        Service service = container.get(name);
+        if(service==null)throw new ServiceNotFoundException(name);
+        return service;
     }
 }

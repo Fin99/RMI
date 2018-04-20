@@ -26,9 +26,8 @@ public class ServerImplDefault implements Server {
         return container.addService(service, serviceName);
     }
 
-
     @Override
-    public void start() throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    public void start() throws IOException {
         while (true) {
             //wait request client
             byte[] receiveArray = new byte[10000];
@@ -60,7 +59,7 @@ public class ServerImplDefault implements Server {
         }
     }
 
-    private Object getResultInvokeMethodToClient(byte[] arrayCopy, DatagramSocket socket) throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    private Object getResultInvokeMethodToClient(byte[] arrayCopy, DatagramSocket socket) throws IOException {
         //get name service
         String name = (String) readFromByteArray(arrayCopy);
         //get name method
@@ -86,19 +85,35 @@ public class ServerImplDefault implements Server {
             argsClass[i] = (Class) readFromByteArray(buffer);
         }
         // invoke method and return result
-        Service service = findService(name);
-        Method methodService = service.getClass().getMethod(method, argsClass);
-        return methodService.invoke(service, args);
+        Service service = null;
+        try {
+            service = findService(name);
+        } catch (ServiceNotFoundException e) {
+            return writeToByteArray(new ServiceNotFoundException(name));
+        }
+        Method methodService = null;
+        try {
+            methodService = service.getClass().getMethod(method, argsClass);
+            return methodService.invoke(service, args);
+        } catch (NoSuchMethodException e) {
+            return writeToByteArray(new IllegalArgumentException("The requested method was not found"));
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            return writeToByteArray(new IllegalArgumentException("The requested method is not available"));
+        }
     }
 
-    private Object getServiceToClient(byte[] arrayCopy) throws IOException, ClassNotFoundException {
+    private Object getServiceToClient(byte[] arrayCopy) {
         //find service for client
-        String string = (String) readFromByteArray(arrayCopy);
-        return findService(string);
+        String serviceName = (String) readFromByteArray(arrayCopy);
+        try {
+            return findService(serviceName);
+        } catch (ServiceNotFoundException e) {
+            return new ServiceNotFoundException(serviceName);
+        }
     }
 
     @Override
-    public Service findService(String serviceName) {
+    public Service findService(String serviceName) throws ServiceNotFoundException {
         return container.getService(serviceName);
     }
 
@@ -120,11 +135,11 @@ public class ServerImplDefault implements Server {
         return null;
     }
 
-    private Object readFromByteArray(byte[] bytes) throws IOException, ClassNotFoundException {
+    private Object readFromByteArray(byte[] bytes) {
         try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
              ObjectInputStream in = new ObjectInputStream(bais);) {
             return in.readObject();
-        } catch (IOException e) {
+        } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }
         return null;
