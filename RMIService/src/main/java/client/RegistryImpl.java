@@ -1,6 +1,5 @@
 package client;
 
-import com.sun.istack.internal.NotNull;
 import server.ServiceNotFoundException;
 
 import java.io.*;
@@ -18,7 +17,7 @@ public class RegistryImpl implements Registry {
     }
 
     @Override
-    public Object lookup(@NotNull String name) throws IOException, ServiceNotFoundException {
+    public Object lookup(String name) throws IOException, ServiceNotFoundException {
         //check correctness service name
         if(name == null || name.equals("")) throw new IllegalArgumentException("Invalid service name");
         //send message name service
@@ -44,7 +43,7 @@ public class RegistryImpl implements Registry {
         //create and return proxy
         Class[] interfaze = implementation.getClass().getInterfaces();
         ClassLoader loader = implementation.getClass().getClassLoader();
-        InvocationHandler handler = new RMIInvocationHandler(10001, name);
+        InvocationHandler handler = new RMIInvocationHandler(port, name);
         return Proxy.newProxyInstance(loader, interfaze, handler);
     }
 

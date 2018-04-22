@@ -22,4 +22,9 @@ public class RMIServiceCalculatorImpl implements RMIServiceCalculator, Service {
     public int sumAllNumber() {
         return sumAllTerm;
     }
+
+    @Override
+    public void nullifySumAllNumber() {
+        sumAllTerm = 0;
+    }
 }
