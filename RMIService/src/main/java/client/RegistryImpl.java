@@ -2,7 +2,11 @@ package client;
 
 import server.ServiceNotFoundException;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.net.DatagramPacket;
@@ -16,10 +20,21 @@ public class RegistryImpl implements Registry {
         this.port = port;
     }
 
+    private static byte[] writeToByteArray(Object element) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream out = new ObjectOutputStream(baos);) {
+            out.writeObject(element);
+            return baos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     @Override
     public Object lookup(String name) throws IOException, ServiceNotFoundException {
         //check correctness service name
-        if(name == null || name.equals("")) throw new IllegalArgumentException("Invalid service name");
+        if (name == null || name.equals("")) throw new IllegalArgumentException("Invalid service name");
         //send message name service
         byte[] bufferName = writeToByteArray(name);
         byte[] buffer = new byte[bufferName.length + 1];
@@ -37,7 +52,7 @@ public class RegistryImpl implements Registry {
         socket.receive(responsePacket);
         socket.close();
         Object implementation = readFromByteArray(receiveMas);
-        if(implementation instanceof Throwable)throw (ServiceNotFoundException) implementation;
+        if (implementation instanceof Throwable) throw (ServiceNotFoundException) implementation;
         //check whether server has found service
         if (implementation == null) throw new IllegalArgumentException("Invalid service name");
         //create and return proxy
@@ -47,18 +62,7 @@ public class RegistryImpl implements Registry {
         return Proxy.newProxyInstance(loader, interfaze, handler);
     }
 
-    private static byte[] writeToByteArray(Object element) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream out = new ObjectOutputStream(baos);) {
-            out.writeObject(element);
-            return baos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private Object readFromByteArray(byte[] bytes){
+    private Object readFromByteArray(byte[] bytes) {
         try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
              ObjectInputStream in = new ObjectInputStream(bais);) {
             return in.readObject();

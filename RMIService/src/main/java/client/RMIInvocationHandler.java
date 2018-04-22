@@ -1,9 +1,13 @@
 package client;
 
-import server.Service;
 import server.ServiceNotFoundException;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.DatagramPacket;
@@ -17,6 +21,13 @@ public class RMIInvocationHandler implements InvocationHandler {
     RMIInvocationHandler(int port, String name) {
         this.port = port;
         this.name = name;
+    }
+
+    private static byte[] writeToByteArray(Object element) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(baos);
+        out.writeObject(element);
+        return baos.toByteArray();
     }
 
     public Object invoke(Object proxy, Method m, Object[] args) throws IOException, ServiceNotFoundException, IllegalArgumentException {
@@ -44,7 +55,8 @@ public class RMIInvocationHandler implements InvocationHandler {
             request.send(packetCountArgs);
             //send args
             for (Object a : args) {
-                if(!(a instanceof Serializable))throw new IllegalArgumentException("All arguments must implement the interface Serializable");
+                if (!(a instanceof Serializable))
+                    throw new IllegalArgumentException("All arguments must implement the interface Serializable");
                 buffer = writeToByteArray(a);
                 DatagramPacket packetArgs = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
                 request.send(packetArgs);
@@ -68,13 +80,6 @@ public class RMIInvocationHandler implements InvocationHandler {
         if (result instanceof ServiceNotFoundException) throw (ServiceNotFoundException) result;
         if (result instanceof IllegalArgumentException) throw (IllegalArgumentException) result;
         return result;
-    }
-
-    private static byte[] writeToByteArray(Object element) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream out = new ObjectOutputStream(baos);
-        out.writeObject(element);
-        return baos.toByteArray();
     }
 
     private Object readFromByteArray(byte[] bytes) throws IOException {

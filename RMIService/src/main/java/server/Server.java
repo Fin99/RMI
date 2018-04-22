@@ -1,8 +1,6 @@
 package server;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.SocketException;
 
 //process request client. Save within oneself one container. Protocol UDP.
 /*
