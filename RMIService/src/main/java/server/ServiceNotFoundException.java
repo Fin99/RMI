@@ -2,6 +2,7 @@ package server;
 
 public class ServiceNotFoundException extends ClassNotFoundException {
     private String serviceName;
+
     public ServiceNotFoundException(String serviceName) {
         this.serviceName = serviceName;
     }

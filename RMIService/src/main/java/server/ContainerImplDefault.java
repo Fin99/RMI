@@ -22,7 +22,7 @@ public class ContainerImplDefault implements Container {
     @Override
     public Service getService(String name) throws ServiceNotFoundException {
         Service service = container.get(name);
-        if(service==null)throw new ServiceNotFoundException(name);
+        if (service == null) throw new ServiceNotFoundException(name);
         return service;
     }
 }

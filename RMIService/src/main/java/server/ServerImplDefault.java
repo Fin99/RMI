@@ -1,13 +1,37 @@
 package server;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 
 public class ServerImplDefault implements Server {
     private Container container;
     private int port;
+
+    public static Server build() {
+        ServerImplDefault serverImplDefault = new ServerImplDefault();
+        serverImplDefault.container = new ContainerImplDefault();
+        serverImplDefault.port = 6968;
+        return serverImplDefault;
+    }
+
+    private static byte[] writeToByteArray(Object element) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream out = new ObjectOutputStream(baos);) {
+            out.writeObject(element);
+            return baos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     @Override
     public Server setContainer(Container container) {
@@ -115,24 +139,6 @@ public class ServerImplDefault implements Server {
     @Override
     public Service findService(String serviceName) throws ServiceNotFoundException {
         return container.getService(serviceName);
-    }
-
-    public static Server build() {
-        ServerImplDefault serverImplDefault = new ServerImplDefault();
-        serverImplDefault.container = new ContainerImplDefault();
-        serverImplDefault.port = 6968;
-        return serverImplDefault;
-    }
-
-    private static byte[] writeToByteArray(Object element) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream out = new ObjectOutputStream(baos);) {
-            out.writeObject(element);
-            return baos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
     private Object readFromByteArray(byte[] bytes) {
