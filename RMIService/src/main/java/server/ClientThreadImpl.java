@@ -84,7 +84,7 @@ public class ClientThreadImpl extends Thread implements ClientThread {
             //send all interfaces that the class implements
             Class[] interfaces = container.getService(serviceName).getClass().getInterfaces();
             Send.writeToByteArray(clientOutput, interfaces.length);
-            for(Class interfaze: interfaces) {
+            for (Class interfaze : interfaces) {
                 Send.writeToByteArray(clientOutput, interfaze);
             }
         } catch (ServiceNotFoundException e) {

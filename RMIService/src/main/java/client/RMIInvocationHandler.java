@@ -12,14 +12,14 @@ public class RMIInvocationHandler implements InvocationHandler {
     private final DataOutputStream serverOutput;
     private final String name;
 
-    RMIInvocationHandler(InputStream inputStream, OutputStream outputStream, String name){
+    RMIInvocationHandler(InputStream inputStream, OutputStream outputStream, String name) {
         serverInput = new DataInputStream(inputStream);
         serverOutput = new DataOutputStream(outputStream);
         this.name = name;
     }
 
     @Override
-    public Object invoke(Object proxy, Method m, Object[] args) throws IOException, ServiceNotFoundException, IllegalArgumentException{
+    public Object invoke(Object proxy, Method m, Object[] args) throws IOException, ServiceNotFoundException, IllegalArgumentException {
         Object result;
         //send type request
         Send.writeToByteArray(serverOutput, "invoke");

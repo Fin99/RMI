@@ -2,12 +2,6 @@ package server;
 
 import java.io.IOException;
 
-//process request client. Save within oneself one container. Protocol UDP.
-/*
-    1. request from client
-    2. find this service in container
-    3. response found service client
- */
 public interface Server {
     Server setContainer(Container container);
 

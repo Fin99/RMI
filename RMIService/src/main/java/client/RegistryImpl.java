@@ -32,13 +32,14 @@ public class RegistryImpl implements Registry {
         Send.writeToByteArray(serverOutput, name);
         //receive number interfaces that the class implements or exception
         Object numberInterfacesOrException = Send.readFromByteArray(serverInput);
-        if (numberInterfacesOrException instanceof Throwable) throw (ServiceNotFoundException) numberInterfacesOrException;
+        if (numberInterfacesOrException instanceof Throwable)
+            throw (ServiceNotFoundException) numberInterfacesOrException;
         //check whether server has found service
         if (numberInterfacesOrException == null) throw new IllegalArgumentException("Invalid service name");
         int numberInterfaces = (int) numberInterfacesOrException;
         //create and return proxy
         Class[] interfaces = new Class[numberInterfaces];
-        for(int i = 0; i< numberInterfaces; i++){
+        for (int i = 0; i < numberInterfaces; i++) {
             interfaces[i] = (Class) Send.readFromByteArray(serverInput);
         }
         ClassLoader loader = interfaces[0].getClassLoader();

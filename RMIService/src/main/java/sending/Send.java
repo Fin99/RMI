@@ -14,7 +14,7 @@ public class Send {
     }
 
     public static Object readFromByteArray(DataInputStream stream) throws IOException {
-        int lengthBuff  = stream.readInt();
+        int lengthBuff = stream.readInt();
         byte[] buff = new byte[lengthBuff];
         stream.readFully(buff, 0, lengthBuff);
         ByteArrayInputStream bais = new ByteArrayInputStream(buff);

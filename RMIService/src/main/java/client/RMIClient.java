@@ -3,7 +3,7 @@ package client;
 import java.io.IOException;
 
 public class RMIClient {
-    public static Registry createRegistry(int port){
+    public static Registry createRegistry(int port) {
         try {
             return new RegistryImpl(port);
         } catch (IOException e) {
