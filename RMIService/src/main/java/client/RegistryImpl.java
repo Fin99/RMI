@@ -1,70 +1,49 @@
 package client;
 
+import sending.Send;
 import server.ServiceNotFoundException;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.Socket;
 
 public class RegistryImpl implements Registry {
-    private int port;
+    private final Socket server;
+    private final DataOutputStream serverOutput;
+    private final DataInputStream serverInput;
 
-    public RegistryImpl(int port) {
-        this.port = port;
+    public RegistryImpl(int port) throws IOException {
+        server = new Socket(InetAddress.getLocalHost(), port);
+        serverOutput = new DataOutputStream(server.getOutputStream());
+        serverInput = new DataInputStream(server.getInputStream());
     }
 
     @Override
     public Object lookup(String name) throws IOException, ServiceNotFoundException {
         //check correctness service name
-        if(name == null || name.equals("")) throw new IllegalArgumentException("Invalid service name");
+        if (name == null || name.equals("")) throw new IllegalArgumentException("Invalid service name");
+        //send type request
+        Send.writeToByteArray(serverOutput, "lookup");
         //send message name service
-        byte[] bufferName = writeToByteArray(name);
-        byte[] buffer = new byte[bufferName.length + 1];
-        buffer[0] = 0;
-        System.arraycopy(bufferName, 0, buffer, 1, bufferName.length);
-        DatagramPacket requestPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getLocalHost(), port);
-        DatagramSocket socket = new DatagramSocket();
-        socket.send(requestPacket);
-        socket.close();
-        //receive implementation
-        byte[] receiveMas = new byte[10000];
-        DatagramPacket responsePacket = new DatagramPacket(receiveMas, receiveMas.length);
-        socket = new DatagramSocket(port + 1);
-        socket.setSoTimeout(2000);
-        socket.receive(responsePacket);
-        socket.close();
-        Object implementation = readFromByteArray(receiveMas);
-        if(implementation instanceof Throwable)throw (ServiceNotFoundException) implementation;
+        Send.writeToByteArray(serverOutput, name);
+        //receive number interfaces that the class implements or exception
+        Object numberInterfacesOrException = Send.readFromByteArray(serverInput);
+        if (numberInterfacesOrException instanceof Throwable) throw (ServiceNotFoundException) numberInterfacesOrException;
         //check whether server has found service
-        if (implementation == null) throw new IllegalArgumentException("Invalid service name");
+        if (numberInterfacesOrException == null) throw new IllegalArgumentException("Invalid service name");
+        int numberInterfaces = (int) numberInterfacesOrException;
         //create and return proxy
-        Class[] interfaze = implementation.getClass().getInterfaces();
-        ClassLoader loader = implementation.getClass().getClassLoader();
-        InvocationHandler handler = new RMIInvocationHandler(port, name);
-        return Proxy.newProxyInstance(loader, interfaze, handler);
+        Class[] interfaces = new Class[numberInterfaces];
+        for(int i = 0; i< numberInterfaces; i++){
+            interfaces[i] = (Class) Send.readFromByteArray(serverInput);
+        }
+        ClassLoader loader = interfaces[0].getClassLoader();
+        InvocationHandler handler = new RMIInvocationHandler(serverInput, serverOutput, name);
+        return Proxy.newProxyInstance(loader, interfaces, handler);
     }
 
-    private static byte[] writeToByteArray(Object element) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream out = new ObjectOutputStream(baos);) {
-            out.writeObject(element);
-            return baos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private Object readFromByteArray(byte[] bytes){
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-             ObjectInputStream in = new ObjectInputStream(bais);) {
-            return in.readObject();
-        } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
 }

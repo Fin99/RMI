@@ -11,7 +11,7 @@ public class RegistryImplTest {
     private Registry registry;
 
     @Before
-    public void init(){
+    public void init() throws IOException {
         registry = new RegistryImpl(24555);
     }
 
