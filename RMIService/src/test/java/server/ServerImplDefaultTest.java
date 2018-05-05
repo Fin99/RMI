@@ -15,14 +15,14 @@ public class ServerImplDefaultTest {
 
     @Test
     public void setContainerTest() {
-        server.setContainer(new ContainerImplDefault());
+        server.setContainer(new ContainerSaveConditionImplDefault());
         server.addService(new ClassForTest.CalculatorImpl(), "s");
         server = new ServerImplDefault();
     }
 
     @Test
     public void addAndFindServiceTest() throws ServiceNotFoundException {
-        server.setContainer(new ContainerImplDefault());
+        server.setContainer(new ContainerSaveConditionImplDefault());
         server.addService(new ClassForTest.CalculatorImpl(), "s");
         server.findService("s");
         try {

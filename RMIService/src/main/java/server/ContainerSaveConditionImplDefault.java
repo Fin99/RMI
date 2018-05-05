@@ -2,7 +2,7 @@ package server;
 
 import java.util.HashMap;
 
-public class ContainerImplDefault implements Container {
+public class ContainerSaveConditionImplDefault implements ContainerSaveCondition {
     private HashMap<String, Service> container;
 
     {
@@ -24,5 +24,10 @@ public class ContainerImplDefault implements Container {
         Service service = container.get(name);
         if (service == null) throw new ServiceNotFoundException(name);
         return service;
+    }
+
+    @Override
+    public boolean contains(String serviceName) {
+        return container.containsKey(serviceName);
     }
 }

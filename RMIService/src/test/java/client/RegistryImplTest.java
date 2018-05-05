@@ -17,12 +17,12 @@ public class RegistryImplTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void lookupTestEmptyName() throws IOException, ServiceNotFoundException {
-        registry.lookup("");
+        registry.lookup("", true);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void lookupTestNullName() throws IOException, ServiceNotFoundException {
-        registry.lookup(null);
+        registry.lookup(null, true);
     }
 
 }

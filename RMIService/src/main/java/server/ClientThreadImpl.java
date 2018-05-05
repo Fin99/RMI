@@ -10,14 +10,18 @@ import java.lang.reflect.Method;
 import java.net.Socket;
 
 public class ClientThreadImpl extends Thread implements ClientThread {
-    private final Container container;
+    private final ContainerSaveCondition containerSaveCondition;
+    private final ContainerNotSaveCondition containerNotSaveCondition;
     private final DataInputStream clientInput;
     private final DataOutputStream clientOutput;
+    private final Socket client;
 
-    ClientThreadImpl(Container container, Socket socket) throws IOException {
-        this.container = container;
+    ClientThreadImpl(ContainerNotSaveCondition containerNotSaveCondition, ContainerSaveCondition container, Socket socket) throws IOException {
+        this.containerNotSaveCondition = containerNotSaveCondition;
+        this.containerSaveCondition = container;
         clientInput = new DataInputStream(socket.getInputStream());
         clientOutput = new DataOutputStream(socket.getOutputStream());
+        client = socket;
     }
 
     @Override
@@ -39,6 +43,7 @@ public class ClientThreadImpl extends Thread implements ClientThread {
                 }
             }
         } catch (IOException e) {
+            containerNotSaveCondition.removeService(client);
             new IOException("Client disconnect").printStackTrace();
         }
     }
@@ -62,9 +67,13 @@ public class ClientThreadImpl extends Thread implements ClientThread {
         // invoke method and return result
         Service service = null;
         try {
-            service = container.getService(name);
+            service = containerSaveCondition.getService(name);
         } catch (ServiceNotFoundException e) {
-            Send.writeToByteArray(clientOutput, new ServiceNotFoundException(name));
+            try {
+                service = containerNotSaveCondition.getService(name, client);
+            } catch (ServiceNotFoundException e1) {
+                Send.writeToByteArray(clientOutput, new ServiceNotFoundException(name));
+            }
         }
         Method methodService = null;
         try {
@@ -80,15 +89,28 @@ public class ClientThreadImpl extends Thread implements ClientThread {
     private void getServiceToClient() throws IOException {
         //find service for client
         String serviceName = (String) Send.readFromByteArray(clientInput);
+        String typeCondition = (String) Send.readFromByteArray(clientInput);
         try {
-            //send all interfaces that the class implements
-            Class[] interfaces = container.getService(serviceName).getClass().getInterfaces();
-            Send.writeToByteArray(clientOutput, interfaces.length);
-            for (Class interfaze : interfaces) {
-                Send.writeToByteArray(clientOutput, interfaze);
+            if(typeCondition.equals("Save")) {
+                //send all interfaces that the class implements
+                Class[] interfaces = containerSaveCondition.getService(serviceName).getClass().getInterfaces();
+                Send.writeToByteArray(clientOutput, interfaces.length);
+                for (Class interfaze : interfaces) {
+                    Send.writeToByteArray(clientOutput, interfaze);
+                }
+            } else if(typeCondition.equals("NotSave")){
+                Class[] interfaces =  containerNotSaveCondition.addService(serviceName, client).getClass().getInterfaces();
+                Send.writeToByteArray(clientOutput, interfaces.length);
+                for (Class interfaze : interfaces) {
+                    Send.writeToByteArray(clientOutput, interfaze);
+                }
+            } else {
+                throw new ServiceNotFoundException(serviceName);
             }
         } catch (ServiceNotFoundException e) {
             Send.writeToByteArray(clientOutput, new ServiceNotFoundException(serviceName));
+        } catch (InstantiationException | IllegalAccessException e) {
+            e.printStackTrace();
         }
     }
 }

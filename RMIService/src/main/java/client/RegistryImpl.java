@@ -23,13 +23,19 @@ public class RegistryImpl implements Registry {
     }
 
     @Override
-    public Object lookup(String name) throws IOException, ServiceNotFoundException {
+    public Object lookup(String name, boolean saveCondition) throws IOException, ServiceNotFoundException {
         //check correctness service name
         if (name == null || name.equals("")) throw new IllegalArgumentException("Invalid service name");
         //send type request
         Send.writeToByteArray(serverOutput, "lookup");
         //send message name service
         Send.writeToByteArray(serverOutput, name);
+        //send type condition
+        if(saveCondition){
+            Send.writeToByteArray(serverOutput, "Save");
+        } else {
+            Send.writeToByteArray(serverOutput, "NotSave");
+        }
         //receive number interfaces that the class implements or exception
         Object numberInterfacesOrException = Send.readFromByteArray(serverInput);
         if (numberInterfacesOrException instanceof Throwable)

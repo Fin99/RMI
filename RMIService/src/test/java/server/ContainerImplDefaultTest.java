@@ -6,11 +6,11 @@ import org.junit.Test;
 import other.ClassForTest;
 
 public class ContainerImplDefaultTest {
-    private Container container;
+    private ContainerSaveCondition container;
 
     @Before
     public void init() {
-        container = new ContainerImplDefault();
+        container = new ContainerSaveConditionImplDefault();
     }
 
     @Test
@@ -18,14 +18,14 @@ public class ContainerImplDefaultTest {
         ClassForTest.CalculatorImpl calculator = new ClassForTest.CalculatorImpl();
         container.addService(calculator, "service");
         Assert.assertEquals(calculator, container.getService("service"));
-        container = new ContainerImplDefault();
+        container = new ContainerSaveConditionImplDefault();
     }
 
     @Test(expected = ServiceNotFoundException.class)
     public void getServiceExceptionTest() throws ServiceNotFoundException {
         container.addService(new ClassForTest.CalculatorImpl(), "service");
         container.getService("not found me");
-        container = new ContainerImplDefault();
+        container = new ContainerSaveConditionImplDefault();
     }
 
     @Test
@@ -39,7 +39,7 @@ public class ContainerImplDefaultTest {
             Assert.fail();
         } catch (ServiceNotFoundException e){
         }
-        container = new ContainerImplDefault();
+        container = new ContainerSaveConditionImplDefault();
     }
 
 }
